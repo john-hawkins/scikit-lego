@@ -147,9 +147,9 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         self._check_n_features(X, reset=False)
 
         if self.as_expectation:
-            return predict_default(X)
+            return self.predict_as_expectation(X)
         else:
-            return predict_as_expectation(X)
+            return self.predict_default(X)
 
     def predict_default(self, X):
         """
