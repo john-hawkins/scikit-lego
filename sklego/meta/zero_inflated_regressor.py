@@ -48,10 +48,11 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
     array([4.91483294, 0.        , 0.        , 0.04941909, 0.        ])
     """
 
-    def __init__(self, classifier, regressor) -> None:
+    def __init__(self, classifier, regressor, as_expectation) -> None:
         """Initialize."""
         self.classifier = classifier
         self.regressor = regressor
+        self.as_expectation = as_expectation
 
     def fit(self, X, y, sample_weight=None):
         """
@@ -145,6 +146,27 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         X = check_array(X)
         self._check_n_features(X, reset=False)
 
+        if self.as_expectation:
+            return predict_default(X)
+        else:
+            return predict_as_expectation(X)
+
+    def predict_default(self, X):
+        """
+        Helper method for predict().  
+        Return predictions using default method of binary classification for
+        determining the zeros before applying regressor to non-zero records.
+
+        Parameters
+        ----------
+        X : np.ndarray, shape (n_samples, n_features)
+            Samples to get predictions of.
+
+        Returns
+        -------
+        y : np.ndarray, shape (n_samples,)
+            The predicted values.
+        """
         output = np.zeros(len(X))
         non_zero_indices = np.where(self.classifier_.predict(X))[0]
 
@@ -152,3 +174,29 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
             output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices])
 
         return output
+
+    def predict_as_expectation(self, X):
+        """
+        Helper method for predict().
+        Return predictions as an expectation over the regression model output
+        using the probabilities from the classifier.
+
+        Parameters
+        ----------
+        X : np.ndarray, shape (n_samples, n_features)
+            Samples to get predictions of.
+
+        Returns
+        -------
+        y : np.ndarray, shape (n_samples,)
+            The predicted values.
+        """
+
+        prob_non_zero = self.classifier_.predict_proba(X)[:,1]
+        regressed = self.regressor_.predict(X)
+
+        output = prob_non_zero * regressed
+
+        return output
+
+
