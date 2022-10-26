@@ -153,7 +153,7 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
 
     def predict_default(self, X):
         """
-        Helper method for predict().  
+        Helper method for predict().
         Return predictions using default method of binary classification for
         determining the zeros before applying regressor to non-zero records.
 
@@ -191,12 +191,9 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         y : np.ndarray, shape (n_samples,)
             The predicted values.
         """
-
-        prob_non_zero = self.classifier_.predict_proba(X)[:,1]
+        prob_non_zero = self.classifier_.predict_proba(X)[:, 1]
         regressed = self.regressor_.predict(X)
 
         output = prob_non_zero * regressed
 
         return output
-
-
