@@ -19,6 +19,15 @@ def test_zir(test_fn):
     )
     test_fn(ZeroInflatedRegressor.__name__, regr)
 
+@pytest.mark.parametrize("test_fn", [check_shape_remains_same_regressor])
+def test_zir_exp(test_fn):
+    regr = ZeroInflatedRegressor(
+        classifier=ExtraTreesClassifier(random_state=0),
+        regressor=ExtraTreesRegressor(random_state=0),
+        as_expectation=True
+    )
+    test_fn(ZeroInflatedRegressor.__name__, regr)
+
 
 @pytest.mark.parametrize(
     "test_fn",
@@ -32,6 +41,22 @@ def test_estimator_checks(test_fn):
         ZeroInflatedRegressor(
             classifier=ExtraTreesClassifier(random_state=0),
             regressor=ExtraTreesRegressor(random_state=0)
+        )
+    )
+
+@pytest.mark.parametrize(
+    "test_fn",
+    select_tests(
+        flatten([general_checks, regressor_checks]),
+    )
+)
+def test_estimator_checks_expectation(test_fn):
+    test_fn(
+        ZeroInflatedRegressor.__name__,
+        ZeroInflatedRegressor(
+            classifier=ExtraTreesClassifier(random_state=0),
+            regressor=ExtraTreesRegressor(random_state=0),
+            as_expectation=True
         )
     )
 
@@ -53,6 +78,25 @@ def test_zero_inflated_example():
 
     assert zir_score > 0.85
     assert zir_score > et_score
+
+
+def test_zero_inflated_example_expectation_comparison():
+    np.random.seed(0)
+    X = np.random.randn(10000, 4)
+    y = ((X[:, 0] > 0) & (X[:, 1] > 0)) * np.abs(X[:, 2] * X[:, 3] ** 2)  # many zeroes here, in about 75% of the cases.
+
+    zir = ZeroInflatedRegressor(
+        classifier=ExtraTreesClassifier(random_state=0),
+        regressor=ExtraTreesRegressor(random_state=0)
+    )
+
+    zir.fit(X, y)
+    zir_preds = zir.predict(X)
+
+    zir.as_expectation=True
+    zir2_preds = zir.predict(X)
+
+    assert zir_preds.mean() > zir2_preds.mean()
 
 
 @pytest.mark.parametrize("classifier,regressor,performance", [
